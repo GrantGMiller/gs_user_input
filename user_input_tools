@@ -1,3 +1,20 @@
+from extronlib import event
+
+import calendar
+import datetime
+import json
+
+from extronlib.system import (
+    File,
+    Wait,
+)
+from keyboard import Keyboard
+from scrolling_table import ScrollingTable
+
+
+
+
+
 # UserInput *********************************************************************
 class UserInputClass:
     '''
@@ -1045,3 +1062,411 @@ class UserInputClass:
             self._bool_btn_false_explanation.SetText('')
 
         self._bool_btn_true.Host.ShowPopup(self._bool_popup_name)
+
+
+class DirectoryNavigationClass:
+    def __init__(self,
+                 lblCurrentDirectory=None,
+                 btnScrollUp=None,
+                 btnScrollDown=None,
+                 lvlScrollFeedback=None,
+                 lblScrollText=None,
+                 btnNavUp=None,
+                 limitStringLen=25,
+                 lblMessage=None,
+                 ):
+
+        self._lblMessage = lblMessage
+        self._limitStringLen = limitStringLen
+        self._btnNavUp = btnNavUp
+        self._lblCurrentDirectory = lblCurrentDirectory
+
+        self._table = ScrollingTable()
+        self._table.set_table_header_order(['entry', 'folderIcon'])
+        if btnScrollUp is not None:
+            self._table.register_scroll_up_button(btnScrollUp)
+            btnScrollUp._repeatTime = 0.1
+            btnScrollUp._holdTime = 0.2
+
+            @event(btnScrollUp, ['Pressed', 'Repeated'])
+            def btnScrollUpEvent(button, state):
+                print('btnScrollUpEvent', state)
+                self._table.scroll_up()
+
+        if btnScrollDown is not None:
+            self._table.register_scroll_down_button(btnScrollDown)
+            btnScrollDown._repeatTime = 0.1
+            btnScrollDown._holdTime = 0.2
+
+            @event(btnScrollDown, ['Pressed', 'Repeated'])
+            def btnScrollDownEvent(button, state):
+                self._table.scroll_down()
+
+        if btnNavUp is not None:
+            @event(btnNavUp, 'Released')
+            def btnNavUpEvent(button, state):
+                self.NavigateUp()
+
+        if lvlScrollFeedback is not None:
+            self._table.register_scroll_updown_level(lvlScrollFeedback)
+
+        if lblScrollText is not None:
+            self._table.register_scroll_updown_label(lblScrollText)
+
+        self._data = {
+            # [
+            # '/rootfile1',
+            # '/rootfile2',
+            # '/rootFolder3/file3a',
+            # '/rootFolder3/file3b',
+            # '/rootFolder3/folder3c/file3c1',
+            # '/rootFolder3/folder3c/file3c2',
+            # ]
+        }
+        self._currentDirectory = '/'
+
+        self._waitUpdateTable = Wait(0.1, self._UpdateTable)
+        self._waitUpdateTable.Cancel()
+
+        self._table.CellTapped = self._CellTapped
+        self._fileSelectedCallback = None
+
+        self._table.CellHeld = self._CellHeld
+        self._fileHeldCallback = None
+
+        self._allowChangeDirectory = True
+        self._allowMakeNewFile = True
+        self._allowMakeNewFolder = True
+        self._showCurrentDirectory = True
+        self._allowDelete = True
+
+        self._directoryLock = '/'  # dont allow the user to go higher than this dir
+        self._showFiles = True
+
+    def SetShowFiles(self, state):
+        self._showFiles = state
+        self._UpdateTable()
+
+    def SetCurrentDirTextLen(self, length):
+        length = int(length)
+        self._limitStringLen = length
+
+    def SetDirectoryLock(self, dir):
+        self._directoryLock = dir
+        self.SetCurrentDirectory(dir)
+
+    def SetCurrentDirectory(self, dir):
+        self._currentDirectory = dir
+        self._UpdateTable()
+
+    def RegisterRow(self, rowNumber, btnIcon, btnSelection):
+        if btnIcon._holdTime is None:
+            btnIcon._holdTime = 1
+        self._table.register_row_buttons(rowNumber, btnSelection, btnIcon)
+
+    def NavigateUp(self):
+        if self._currentDirectory != '/':
+            dropDir = self._currentDirectory.split('/')[-2] + '/'
+            self._currentDirectory = self._currentDirectory.replace(dropDir, '')
+            self._waitUpdateTable.Restart()
+
+    def UpdateData(self, newData=None):
+        print('UpdateData(newData={})'.format(newData))
+        if newData == None:
+            newData = File.ListDirWithSub()
+        self._data = newData
+        self._UpdateTable()
+
+    def _CurrentDirIsValid(self):
+        if not self._currentDirectory.endswith('/'):
+            return False
+
+        for item in self._data:
+            if self._currentDirectory in item:
+                return True
+
+        return False
+
+    def _UpdateTable(self):
+        print('DirectoryNavigationClass._UpdateTable()')
+        try:
+            # Verify the self._currentDirectory is valid
+            print('_UpdateTable self._currentDirectory=', self._currentDirectory)
+            print('_UpdateTable self._directoryLock=', self._directoryLock)
+            if self._directoryLock not in self._currentDirectory:
+                self._currentDirectory = self._directoryLock
+
+            if not self._CurrentDirIsValid():
+                self._currentDirectory = self._directoryLock
+
+            print('_UpdateTable self._allowChangeDirectory=', self._allowChangeDirectory)
+            print('_UpdateTable self._btnNavUp.Visible=', self._btnNavUp.Visible)
+            print('_UpdateTable self._btnNavUp=', self._btnNavUp)
+
+            if self._allowChangeDirectory is True:
+                if self._currentDirectory == self._directoryLock:
+                    if self._btnNavUp.Visible is True:
+                        print('self._btnNavUp.SetVisible(False)')
+                        self._btnNavUp.SetVisible(False)
+                else:
+                    if self._btnNavUp.Visible is False:
+                        print('self._btnNavUp.SetVisible(True)')
+                        self._btnNavUp.SetVisible(True)
+            else:
+                if self._btnNavUp.Visible is True:
+                    print('else self._btnNavUp.SetVisible(False)')
+                    self._btnNavUp.SetVisible(False)
+
+            print('_UpdateTable self._lblCurrentDirectory=', self._lblCurrentDirectory)
+            print('_UpdateTable self._showCurrentDirectory=', self._showCurrentDirectory)
+            if self._showCurrentDirectory is True:
+                if self._lblCurrentDirectory.Visible is False:
+                    print('self._lblCurrentDirectory.SetVisible(True)')
+                    self._lblCurrentDirectory.SetVisible(True)
+            else:
+                if self._lblCurrentDirectory.Visible is True:
+                    print('self._lblCurrentDirectory.SetVisible(False)')
+                    self._lblCurrentDirectory.SetVisible(False)
+
+            # Update the table with data
+            self._table.freeze(True)
+
+            print('_UpdateTable self._data=', self._data)
+            if self._data is not None:
+                # Add missing data
+                currentData = []
+                for item in self._data:
+                    print('item=', item)
+                    # Determine if the item is a folder or file
+                    if item.startswith(self._currentDirectory):  # only deal with items in the current directory
+                        print('item.startswith(self._currentDirectory)')
+                        if self.IsInCurrentDirectory(item):
+                            print('self.IsInCurrentDirectory(item)')
+                            itemMinusCurrent = item[len(self._currentDirectory):]
+                            if itemMinusCurrent is not '':
+                                print('itemMinusCurrent is not ""')
+
+                                if self.IsFile(item):
+                                    folderIcon = ' '
+                                    if not self._showFiles:
+                                        continue
+
+                                elif self.IsDirectory(item):
+                                    folderIcon = '\xb1'
+                                    itemMinusCurrent = itemMinusCurrent[
+                                                       :-1]  # chop off the extra '/' at the end of directories
+
+                                else:
+                                    folderIcon = '?'
+
+                                data = {'entry': str(itemMinusCurrent), 'folderIcon': folderIcon, }
+                                if not self._table.has_row(data):
+                                    self._table.add_new_row_data(data)
+                                currentData.append(data)
+
+                # remove leftover data
+                print('_UpdateTable currentData=', currentData)
+                print('_UpdateTable self._table.get_row_data()', self._table.get_row_data())
+                for row in self._table.get_row_data():
+                    if row not in currentData:
+                        self._table.delete_row(row)
+
+                # Sort with the folders at the top
+                self._table.sort_by_column_list([1, 0], reverse=True)
+
+                self._table.freeze(False)
+
+            # Update the current directory label
+            if self._lblCurrentDirectory is not None:
+                if self._data is not None:
+                    self._lblCurrentDirectory.SetText(self._currentDirectory, limitLen=self._limitStringLen,
+                                                      elipses=True, justify='Right')
+                else:
+                    self._lblCurrentDirectory.SetText('<No Data>')
+
+        except Exception as e:
+            print('Exeption DirectoryNavigationClass._UpdateTable\n', e)
+            print('item=', item)
+
+    def IsFile(self, filepath):
+        print('IsFile(filepath={})'.format(filepath))
+        name = filepath.split('/')[-1]
+        if name == '':
+            print('IsFile return False')
+            return False
+
+        for item in self._data:
+            if name in item:
+                if name == item.split('/')[-1]:
+                    print('IsFile return True')
+                    return True
+
+        print('IsFile return False')
+        return False
+
+    def IsDirectory(self, path):
+        print('IsDirectory(path={})'.format(path))
+        # path may end in '/' or may not
+        # examples path='TEST1026', path='TEST1026/', path='image.png'(return False)
+        for item in self._data:
+            if item.endswith('/'):
+                # item is a directory
+                if item.endswith(path):
+                    print('IsDirectory return True')
+                    return True
+                else:
+                    name = path.split('/')[-1]
+                    if name == item.split('/')[-2]:
+                        # '/Farm_Network_Profiles/TEST1026/'.split('/') = ['', 'Farm_Network_Profiles', 'TEST1026', '']
+                        print('IsDirectory return True')
+                        return True
+
+        print('IsDirectory return False')
+        return False
+
+    def IsInCurrentDirectory(self, filepath):
+        # Return true if the item is in the current directory
+        # Return false if it is in a super/sub directory
+        print('IsInCurrentDirectory filepath=', filepath)
+
+        if filepath.startswith(self._currentDirectory):
+            pathMinusCurrent = filepath[len(self._currentDirectory):]
+            print('IsInCurrentDirectory pathMinusCurrent=', pathMinusCurrent)
+            print('self.IsDirectory({})='.format(filepath), self.IsDirectory(filepath))
+            print('self.IsFile({})='.format(filepath), self.IsFile(filepath))
+
+            if self.IsDirectory(filepath):
+                print('IsInCurrentDirectory IsDirectory')
+                print("len(pathMinusCurrent.split('/'))=", len(pathMinusCurrent.split('/')))
+                if len(pathMinusCurrent.split('/')) <= 2:
+                    return True
+                else:
+                    return False
+            elif self.IsFile(filepath):
+                print('IsInCurrentDirectory IsFile')
+                print("len(pathMinusCurrent.split('/'))=", len(pathMinusCurrent.split('/')))
+                if len(pathMinusCurrent.split('/')) == 1:
+                    return True
+                else:
+                    return False
+
+        return False
+
+    def GetType(self, name):
+        if self.IsFile(name):
+            return 'File'
+        elif self.IsDirectory(name):
+            return 'Directory'
+
+    def ChangeDirectory(self, newDir):
+        if not newDir.endswith('/'):
+            newDir += '/'
+
+        self._currentDirectory = newDir
+
+    def _CellTapped(self, table, cell):
+        print(
+            'DirectoryNavigationClass._CellTapped(table={}, cell={})\nself._fileSelectedCallback={}'.format(table, cell,
+                                                                                                            self._fileSelectedCallback))
+        row = cell.get_row()
+        value = self._table.get_cell_value(row, 0)
+        path = self._currentDirectory + value
+        if value == '':
+            return
+
+        print('value=', value)
+        print('path=', path)
+        if self.IsDirectory(path):
+            self.ChangeDirectory(path + '/')
+            self._waitUpdateTable.Restart()
+
+        elif self.IsFile(path):
+            if callable(self._fileSelectedCallback):
+                self._fileSelectedCallback(self, self._currentDirectory + value)
+
+    def _CellHeld(self, table, cell):
+        # This is used for providing the user with more options like: Deleting a file/folder, Creating a new file/folder...
+        print('DirectoryNavigationClass._CellHeld(table={}, cell={})\nself._fileHeldCallback={}'.format(table, cell,
+                                                                                                        self._fileHeldCallback))
+        value = cell.get_value()
+        path = self._currentDirectory + value
+        # path might be a filepath or directory
+        if callable(self._fileHeldCallback):
+            self._fileHeldCallback(self, path)
+
+    def GetDir(self):
+        return self._currentDirectory
+
+    @property
+    def FileSelected(self):
+        return self._fileSelectedCallback
+
+    @FileSelected.setter
+    def FileSelected(self, func):
+        # func should be a function that accetps this dir nav object itself and the selected value
+        self._fileSelectedCallback = func
+
+    @property
+    def FileHeld(self):
+        return self._fileHeldCallback
+
+    @FileHeld.setter
+    def FileHeld(self, func):
+        # func should be a function that accetps this dir nav object itself and the selected value
+        self._fileHeldCallback = func
+
+    def UpdateMessage(self, msg):
+        if self._lblMessage is not None:
+            self._lblMessage.SetText(msg)
+
+    def AllowChangeDirectory(self, state):
+        self._allowChangeDirectory = state
+        self._UpdateTable()
+
+    def GetAllowChangeDirectory(self):
+        return self._allowChangeDirectory
+
+    def AllowMakeNewFile(self, state=None):
+        if state == None:
+            return self._allowMakeNewFile
+        else:
+            self._allowMakeNewFile = state
+            self._UpdateTable()
+
+    def AllowMakeNewFolder(self, state=None):
+        if state == None:
+            return self._allowMakeNewFolder
+        else:
+            self._allowMakeNewFolder = state
+            self._UpdateTable()
+
+    def AllowDelete(self, state=None):
+        if state == None:
+            return self._allowDelete
+        else:
+            self._allowDelete = state
+            self._UpdateTable()
+
+    def ShowCurrentDirectory(self, state=None):
+        if state == None:
+            return self._showCurrentDirectory
+        else:
+            self._showCurrentDirectory = state
+            self._UpdateTable()
+
+def GetDatetimeKwargs(dt):
+    '''
+    This converts a datetime.datetime object to a dict.
+    This is useful for saving a datetime.datetime object as a json string
+    :param dt: datetime.datetime
+    :return: dict
+    '''
+    d = {'year': dt.year,
+         'month': dt.month,
+         'day': dt.day,
+         'hour': dt.hour,
+         'minute': dt.minute,
+         'second': dt.second,
+         'microsecond': dt.microsecond,
+         }
+    return d
