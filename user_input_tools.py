@@ -1,16 +1,15 @@
-from extronlib import event
+from extronlib_pro import (
+    event,
+    File,
+    Wait,
+)
 
 import calendar
 import datetime
 import json
 
-from extronlib.system import (
-    File,
-    Wait,
-)
 from keyboard import Keyboard
 from scrolling_table import ScrollingTable
-
 
 debug = False
 if not debug:
@@ -1455,6 +1454,7 @@ class DirectoryNavigationClass:
         else:
             self._showCurrentDirectory = state
             self._UpdateTable()
+
 
 def GetDatetimeKwargs(dt):
     '''
