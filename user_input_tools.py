@@ -12,7 +12,9 @@ from keyboard import Keyboard
 from scrolling_table import ScrollingTable
 
 
-
+debug = False
+if not debug:
+    print = lambda *a, **k: None
 
 
 # UserInput *********************************************************************
