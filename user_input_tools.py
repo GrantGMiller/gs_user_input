@@ -329,7 +329,7 @@ class UserInputClass:
 
     def setup_calendar(self,
                        calDayNumBtns,
-                       # list of int() where the first int is the first day of the first week. Assuming 5 weeks of 7 days
+                       # list of extronlib.ui.Button where .ID is int() where the first int is the first day of the first week. Assuming 5 weeks of 7 days
                        calDayAgendaBtns=None,
                        calBtnNext=None,  # button that when pressed will show the next month
                        calBtnPrev=None,  # button that when pressed will show the previous month
@@ -366,6 +366,8 @@ class UserInputClass:
         self._calLblMonthYear = calLblMonthYear
         self._calPopupName = calPopupName
         self._maxAgendaWidth = maxAgendaWidth
+
+        calendar.setfirstweekday(6) #Start calendar on Sunday
 
         # Create attributes
         if startDay is None:
@@ -522,6 +524,12 @@ class UserInputClass:
         for instance in self._instances:
             instance._calDisplayMonth(dt)
 
+    def _GetWeekOfMonth(self, dt):
+        weeks = calendar.monthcalendar(dt.year, dt.month)
+        for index, week in enumerate(weeks):
+            if dt.day in week:
+                return index + 1
+
     def _calDisplayMonth(self, dt):
         # date = datetime.datetime object
         # this will update the TLP with data for the month of the datetime.date
@@ -530,11 +538,16 @@ class UserInputClass:
 
         self._calLblMonthYear.SetText(dt.strftime('%B %Y'))
 
+        # Set the 6th week buttons to not visible
+        for btn in self._calDayNumBtns + self._calDayAgendaBtns:
+            if btn.ID % 100 >= 35:
+                btn.SetVisible(False)
+
         monthDates = list(self._calObj.itermonthdates(dt.year, dt.month))
-        for date in monthDates:
-            index = monthDates.index(date)
+        for index, date in enumerate(monthDates):
             if index >= len(self._calDayNumBtns):
                 continue
+
             btnDayNum = self._calDayNumBtns[index]
             btnDayAgenda = self._calDayAgendaBtns[index]
 
@@ -542,9 +555,19 @@ class UserInputClass:
             self._dtMap[date] = [btnDayNum, btnDayAgenda]
 
             if date.month != self._currentMonth:  # Not part of the month
+
                 newState = 1
                 newText = date.strftime('%d ')
-            else:  # is part of the month
+
+            else:  # is part of the current month
+                weekNum = self._GetWeekOfMonth(date)
+                if weekNum >= 6:
+                    #This is part of this month and is in the 6th week, show it
+                    if not btnDayNum.Visible:
+                        btnDayNum.SetVisible(True)
+                    if not btnDayAgenda.Visible:
+                        btnDayAgenda.SetVisible(True)
+
                 newState = 0
                 newText = date.strftime('%d ')
 
@@ -573,7 +596,7 @@ class UserInputClass:
                 if date.month == dt.month:
                     if date.day == dt.day:
                         name = item['name']
-                        string = '{} - {}\n'.format(dt.strftime('%-I:%M%p'), name)
+                        string = '{} - {}\n'.format(dt.strftime('%I:%M%p'), name)
 
                         # Make sure the string isnt too long
                         if self._maxAgendaWidth is not None:
