@@ -367,7 +367,7 @@ class UserInputClass:
         self._calPopupName = calPopupName
         self._maxAgendaWidth = maxAgendaWidth
 
-        calendar.setfirstweekday(6) #Start calendar on Sunday
+        calendar.setfirstweekday(6)  # Start calendar on Sunday
 
         # Create attributes
         if startDay is None:
@@ -562,7 +562,7 @@ class UserInputClass:
             else:  # is part of the current month
                 weekNum = self._GetWeekOfMonth(date)
                 if weekNum >= 6:
-                    #This is part of this month and is in the 6th week, show it
+                    # This is part of this month and is in the 6th week, show it
                     if not btnDayNum.Visible:
                         btnDayNum.SetVisible(True)
                     if not btnDayAgenda.Visible:
@@ -857,7 +857,13 @@ class UserInputClass:
         # Hide button
         @event(list_btn_hide, 'Released')
         def list_btn_hideEvent(button, state):
-            button.Host.HidePopup(list_popup_name)
+            self.HidePopup()
+
+    def HidePopup(self):
+        # hides popups for all types
+        for name in [self._list_popup_name, self._kb_popup_name] + list(self._kb_other_popups.values()):
+            print('name=', name)
+            self._TLP.HidePopup(name)
 
     def get_list(self,
                  options=None,  # list()
@@ -933,7 +939,7 @@ class UserInputClass:
         if kb_btn_cancel:
             @event(kb_btn_cancel, 'Released')
             def kb_btn_cancelEvent(button, state):
-                self._TLP.HidePopup(self._kb_popup_name)
+                self.HidePopup()
 
         self._kb_Keyboard = Keyboard(
             TLP=self._TLP,
