@@ -916,6 +916,7 @@ class UserInputClass:
                        kb_btn_message=None,
                        ):
 
+        self._kb_btn_cancel = kb_btn_cancel
         self._kb_popup_name = kb_popup_name
         self._kb_other_popups = kb_other_popups
         self._kb_btn_message = kb_btn_message
@@ -936,8 +937,8 @@ class UserInputClass:
             if self._kb_feedback_btn:
                 self._kb_feedback_btn.SetText(string)
 
-        if kb_btn_cancel:
-            @event(kb_btn_cancel, 'Released')
+        if self._kb_btn_cancel:
+            @event(self._kb_btn_cancel, 'Released')
             def kb_btn_cancelEvent(button, state):
                 self.HidePopup()
 
@@ -960,7 +961,13 @@ class UserInputClass:
                      text_feedback=None,  # button()
                      passthru=None,  # any object that you want to also come thru the callback
                      message=None,
+                     allowCancel=True, # set to False to force the user to enter input
                      ):
+
+        if allowCancel is True:
+            self._kb_btn_cancel.SetVisible(True)
+        else:
+            self._kb_btn_cancel.SetVisible(False)
 
         if kb_popup_name:
             self._kb_popup_name = kb_popup_name
