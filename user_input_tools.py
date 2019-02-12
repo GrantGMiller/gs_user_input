@@ -11,8 +11,8 @@ import json
 from keyboard import Keyboard
 from scrolling_table import ScrollingTable
 
-debug = False
-if not debug:
+DEBUG = True
+if not DEBUG:
     print = lambda *a, **k: None
 
 
@@ -327,6 +327,9 @@ class UserInputClass:
         else:
             raise Exception('"get_directory" requires "setup_file_explorer()" with btnSubmit parameter')
 
+    def SetupCalendar(self, *a, **k):
+        return self.setup_calendar(*a, **k)
+
     def setup_calendar(self,
                        calDayNumBtns,
                        # list of extronlib.ui.Button where .ID is int() where the first int is the first day of the first week. Assuming 5 weeks of 7 days
@@ -351,7 +354,7 @@ class UserInputClass:
         :param calLblMessage:
         :param calLblMonthYear:
         :param calPopupName:
-        :param startDay:
+        :param startDay: int > None assumes 6=sunday
         :param maxAgendaWidth:
         :return:
         '''
@@ -398,22 +401,24 @@ class UserInputClass:
 
         # Next/Prev buttons
         @event(self._calBtnNext, 'Released')
-        def calBtnNextEvent(button, state):
+        def CalBtnNextEvent(button, state):
             self._currentMonth += 1
             if self._currentMonth > 12:
                 self._currentYear += 1
                 self._currentMonth = 1
 
             self._calDisplayMonth(datetime.datetime(year=self._currentYear, month=self._currentMonth, day=1))
+            print('self._currentMonth=', self._currentMonth)
 
         @event(self._calBtnPrev, 'Released')
-        def _calBtnPrevEvent(button, state):
+        def CalBtnPrevEvent(button, state):
             self._currentMonth -= 1
             if self._currentMonth < 1:
                 self._currentYear -= 1
                 self._currentMonth = 12
 
             self._calDisplayMonth(datetime.datetime(year=self._currentYear, month=self._currentMonth, day=1))
+            print('self._currentMonth=', self._currentMonth)
 
         # Day/Agenda buttons
         @event(self._calDayNumBtns, 'Released')
@@ -430,8 +435,11 @@ class UserInputClass:
         # Load previous data
         self._LoadCalData()
 
+    def GetDate(self, *a, **k):
+        return self.get_date(*a, **k)
+
     def get_date(self,
-                 popupName,
+                 popupName=None,
                  callback=None,
                  # function - should take 2 params, the UserInput instance and the value the user submitted
                  feedback_btn=None,
@@ -474,7 +482,8 @@ class UserInputClass:
         self._calDisplayMonth(datetime.datetime(year=startYear, month=startMonth, day=1))
 
         # Show the calendar
-        self._TLP.ShowPopup(popupName)
+        if popupName is not None:
+            self._TLP.ShowPopup(popupName)
 
         @event(self._calDayNumBtns, 'Released')
         @event(self._calDayAgendaBtns, 'Released')
@@ -646,10 +655,10 @@ class UserInputClass:
         '''
         return self._calEvents.copy()
 
-    def AddCalendarEvent(self, dt, name, metaDict=None):
+    def AddCalendarEvent(self, startDT=None, name=None, metaDict=None, endDT=None):
         '''
         Add an event to the calendar
-        :param dt: datetime.datetime
+        :param startDT: datetime.datetime
         :param name: str
         :param metaDict: {}
         :return:
@@ -658,15 +667,17 @@ class UserInputClass:
             metaDict = {}
 
         eventDict = {
-            'datetime': dt,
+            'datetime': startDT,
             'name': name,
             'meta': metaDict,
+            'Start Time': startDT,
+            'End Time': endDT,
         }
 
         self._calEvents.append(eventDict)
 
         self._SaveCalData()
-        self._calDisplayMonth(dt)
+        self._calDisplayMonth(startDT)
 
     def _SaveCalData(self):
         # Write the data to a file
@@ -677,6 +688,8 @@ class UserInputClass:
             saveItem = {'datetime': GetDatetimeKwargs(dt),
                         'name': item['name'],
                         'meta': item['meta'],
+                        'Start Time': GetDatetimeKwargs(item.get('Start Time', None))
+                        'End Time': GetDatetimeKwargs(item.get('End Time', None))
                         }
             saveItems.append(saveItem)
 
@@ -961,7 +974,7 @@ class UserInputClass:
                      text_feedback=None,  # button()
                      passthru=None,  # any object that you want to also come thru the callback
                      message=None,
-                     allowCancel=True, # set to False to force the user to enter input
+                     allowCancel=True,  # set to False to force the user to enter input
                      ):
 
         if allowCancel is True:
@@ -1499,6 +1512,9 @@ def GetDatetimeKwargs(dt):
     :param dt: datetime.datetime
     :return: dict
     '''
+    if dt is None:
+        return None
+
     d = {'year': dt.year,
          'month': dt.month,
          'day': dt.day,
