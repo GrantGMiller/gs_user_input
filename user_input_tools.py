@@ -10,6 +10,7 @@ import json
 
 from keyboard import Keyboard
 from scrolling_table import ScrollingTable
+from gs_tools import GetRandomHash
 
 DEBUG = True
 if not DEBUG:
@@ -672,6 +673,7 @@ class UserInputClass:
             'meta': metaDict,
             'Start Time': startDT,
             'End Time': endDT,
+            'ID': GetRandomHash(),  # assign a unique id to each event
         }
 
         self._calEvents.append(eventDict)
@@ -685,12 +687,14 @@ class UserInputClass:
 
         for item in self._calEvents:
             dt = item['datetime']
-            saveItem = {'datetime': GetDatetimeKwargs(dt),
-                        'name': item['name'],
-                        'meta': item['meta'],
-                        'Start Time': GetDatetimeKwargs(item.get('Start Time', None))
-                        'End Time': GetDatetimeKwargs(item.get('End Time', None))
-                        }
+            saveItem = {
+                'datetime': GetDatetimeKwargs(dt),
+                'name': item['name'],
+                'meta': item['meta'],
+                'Start Time': GetDatetimeKwargs(item.get('Start Time', None)),
+                'End Time': GetDatetimeKwargs(item.get('End Time', None)),
+                'ID': item.get('ID', None),
+            }
             saveItems.append(saveItem)
 
         with File('calendar.json', mode='wt') as file:
@@ -713,11 +717,14 @@ class UserInputClass:
                     'datetime': dt,
                     'name': saveItem['name'],
                     'meta': saveItem['meta'],
+                    'Start Time': datetime.datetime(**saveItem.get('Start Time', None)),
+                    'End Time': datetime.datetime(**saveItem.get('End Time', None)),
+                    'ID': saveItem.get('ID', None)
                 }
 
                 self._calEvents.append(loadItem)
 
-    def GetCalEvents(self, dt):
+    def GetCalEvents(self, dt=None, ID=None):
         '''
         return list of eventDicts happening at a specific datetime.datetime
 
@@ -731,30 +738,36 @@ class UserInputClass:
         :return: list
         '''
         result = []
-        for item in self._calEvents:
-            dataDT = item['datetime']
-            if dt.year == dataDT.year:
-                if dt.month == dataDT.month:
-                    if dt.day == dataDT.day:
-                        if isinstance(dt, datetime.datetime):
-                            if dt.hour is not 0:
-                                if dt.hour == dataDT.hour:
-                                    if dt.minute is not 0:
-                                        if dt.minute == dataDT.minute:
+        if dt is not None:
+            for item in self._calEvents:
+                dataDT = item['datetime']
+                if dt.year == dataDT.year:
+                    if dt.month == dataDT.month:
+                        if dt.day == dataDT.day:
+                            if isinstance(dt, datetime.datetime):
+                                if dt.hour is not 0:
+                                    if dt.hour == dataDT.hour:
+                                        if dt.minute is not 0:
+                                            if dt.minute == dataDT.minute:
+                                                result.append(item)
+                                        else:
                                             result.append(item)
-                                    else:
-                                        result.append(item)
-                            else:
+                                else:
+                                    result.append(item)
+                            else:  # probably a datetime.date object
                                 result.append(item)
-                        else:  # probably a datetime.date object
-                            result.append(item)
+
+        elif ID is not None:
+            for item in self._calEvents:
+                if item.get('ID', None) == ID:
+                    result.append(item)
 
         return result
 
     def HoldThisEvent(self, eventDict):
         '''
         This class can hold one eventDict for the programmer.
-        :param eventDict:
+        :param eventDict: dict or None
         :return:
         '''
         self._calHeldEvent = eventDict
@@ -764,7 +777,7 @@ class UserInputClass:
         Returns the held eventDict
         :return: eventDict or None
         '''
-        return self._calHeldEvent
+        return self._calHeldEvent.copy() if self._calHeldEvent else None
 
     def TrashHeldEvent(self):
         '''
@@ -786,6 +799,7 @@ class UserInputClass:
             raise Exception('Exception in DeleteEvent\neventDict not in self._calEvents')
 
         self._SaveCalData()
+        self.UpdateMonthDisplay()
 
     def setup_list(self,
                    list_popup_name,  # str()
@@ -913,6 +927,9 @@ class UserInputClass:
         # Show the list popup
         self._TLP.ShowPopup(self._list_popup_name)
 
+    def SetupKeyboard(self, *a, **k):
+        return self.setup_keyboard(*a, **k)
+
     def setup_keyboard(self,
                        kb_popup_name,  # str() #default popup name
                        kb_btn_submit,  # Button()
@@ -964,6 +981,9 @@ class UserInputClass:
             ShiftID=ShiftID,  # int()
             FeedbackObject=FeedbackObject,  # object with .SetText() method
         )
+
+    def GetKeyboard(self, *a, **k):
+        return self.get_keyboard(*a, **k)
 
     def get_keyboard(self,
                      kb_popup_name=None,
