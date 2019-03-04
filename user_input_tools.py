@@ -656,7 +656,7 @@ class UserInputClass:
         '''
         return self._calEvents.copy()
 
-    def AddCalendarEvent(self, startDT=None, name=None, metaDict=None, endDT=None):
+    def AddCalendarEvent(self, startDT=None, name=None, metaDict=None, endDT=None, ID=None):
         '''
         Add an event to the calendar
         :param startDT: datetime.datetime
@@ -667,16 +667,25 @@ class UserInputClass:
         if metaDict is None:
             metaDict = {}
 
-        eventDict = {
+        if ID is None:
+            ID = GetRandomHash()
+
+
+        newEvent = {
             'datetime': startDT,
             'name': name,
             'meta': metaDict,
             'Start Time': startDT,
             'End Time': endDT,
-            'ID': GetRandomHash(),  # assign a unique id to each event
+            'ID': ID,  # assign a unique id to each event
         }
 
-        self._calEvents.append(eventDict)
+        for event in self._calEvents.copy():
+            if event['ID'] == newEvent['ID']:
+                # this event ID already exists, update the event
+                self._calEvents.remove(event)
+
+        self._calEvents.append(newEvent)
 
         self._SaveCalData()
         self._calDisplayMonth(startDT)
@@ -989,9 +998,9 @@ class UserInputClass:
                      kb_popup_name=None,
                      callback=None,
                      # function - should take 2 params, the UserInput instance and the value the user submitted
-                     feedback_btn=None,
-                     password_mode=False,
-                     text_feedback=None,  # button()
+                     feedback_btn=None,  # button to assign submitted value
+                     password_mode=False, # mask your typing with '****'
+                     text_feedback=None,  # button() to show text as its typed
                      passthru=None,  # any object that you want to also come thru the callback
                      message=None,
                      allowCancel=True,  # set to False to force the user to enter input
