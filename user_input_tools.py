@@ -342,7 +342,7 @@ class UserInputClass:
                        calLblMonthYear=None,
                        calPopupName=None,
                        startDay=None,
-                       maxAgendaWidth=None
+                       maxAgendaWidth=None, #limit the num of characters on an adgenda. to prevent it word-wrapping
 
                        ):
         '''
@@ -374,6 +374,8 @@ class UserInputClass:
         calendar.setfirstweekday(6)  # Start calendar on Sunday
 
         # Create attributes
+        self._wait__calDisplayMonth = Wait(1, self._calDisplayMonth)
+        self._calendarCurrentDatetimeChanges = None
         if startDay is None:
             startDay = 6  # sunday
         self._calObj = calendar.Calendar(startDay)
@@ -408,8 +410,12 @@ class UserInputClass:
                 self._currentYear += 1
                 self._currentMonth = 1
 
-            self._calDisplayMonth(datetime.datetime(year=self._currentYear, month=self._currentMonth, day=1))
+            dt = datetime.datetime(year=self._currentYear, month=self._currentMonth, day=1)
+            self._calDisplayMonth(dt)
             print('self._currentMonth=', self._currentMonth)
+
+            if callable(self._calendarCurrentDatetimeChanges):
+                self._calendarCurrentDatetimeChanges(self, dt)
 
         @event(self._calBtnPrev, 'Released')
         def CalBtnPrevEvent(button, state):
@@ -418,8 +424,12 @@ class UserInputClass:
                 self._currentYear -= 1
                 self._currentMonth = 12
 
-            self._calDisplayMonth(datetime.datetime(year=self._currentYear, month=self._currentMonth, day=1))
+            dt = datetime.datetime(year=self._currentYear, month=self._currentMonth, day=1)
+            self._calDisplayMonth(dt)
             print('self._currentMonth=', self._currentMonth)
+
+            if callable(self._calendarCurrentDatetimeChanges):
+                self._calendarCurrentDatetimeChanges(self, dt)
 
         # Day/Agenda buttons
         @event(self._calDayNumBtns, 'Released')
@@ -435,6 +445,19 @@ class UserInputClass:
 
         # Load previous data
         self._LoadCalData()
+
+        #Set the 6th week buttons to not visible
+        for btn in self._calDayNumBtns + self._calDayAgendaBtns:
+            if btn.ID % 100 >= 35:
+                btn.SetVisible(False)
+
+    @property
+    def CalendarCurrentDatetimeChanges(self):
+        return self._calendarCurrentDatetimeChanges
+
+    @CalendarCurrentDatetimeChanges.setter
+    def CalendarCurrentDatetimeChanges(self, func):
+        self._calendarCurrentDatetimeChanges = func
 
     def GetDate(self, *a, **k):
         return self.get_date(*a, **k)
@@ -540,18 +563,23 @@ class UserInputClass:
             if dt.day in week:
                 return index + 1
 
-    def _calDisplayMonth(self, dt):
+    def _calDisplayMonth(self, dt=None):
         # date = datetime.datetime object
         # this will update the TLP with data for the month of the datetime.date
+
+        if dt is None:
+            dt = self._currentDatetime
+
+        self._currentDatetime = dt
 
         self._dtMap = {}
 
         self._calLblMonthYear.SetText(dt.strftime('%B %Y'))
 
         # Set the 6th week buttons to not visible
-        for btn in self._calDayNumBtns + self._calDayAgendaBtns:
-            if btn.ID % 100 >= 35:
-                btn.SetVisible(False)
+        # for btn in self._calDayNumBtns + self._calDayAgendaBtns:
+        #     if btn.ID % 100 >= 35:
+        #         btn.SetVisible(False)
 
         monthDates = list(self._calObj.itermonthdates(dt.year, dt.month))
         for index, date in enumerate(monthDates):
@@ -596,6 +624,17 @@ class UserInputClass:
 
             if btnDayAgenda.Text != agendaText:
                 btnDayAgenda.SetText(agendaText)
+
+        else:
+            # these buttons are past the current month, set to visible false
+            while index <= 41:
+                btnDayNum = self._calDayNumBtns[index]
+                btnDayAgenda = self._calDayAgendaBtns[index]
+
+                btnDayNum.SetVisible(False)
+                btnDayAgenda.SetVisible(False)
+
+                index += 1
 
     def _GetAgendaText(self, date):
         result = ''
@@ -656,12 +695,22 @@ class UserInputClass:
         '''
         return self._calEvents.copy()
 
-    def AddCalendarEvent(self, startDT=None, name=None, metaDict=None, endDT=None, ID=None):
+    def AddCalendarEvent(self,
+                         startDT=None,
+                         name=None,
+                         metaDict=None,
+                         endDT=None,
+                         ID=None,
+                         _delayUpdate=True, # weather to update the display immediately or wait for 1 second after last update
+                         ):
         '''
         Add an event to the calendar
-        :param startDT: datetime.datetime
+        :param startDT: datetime.
+        :param endDT: datetime.datetime
         :param name: str
         :param metaDict: {}
+        :param ID: str
+        :param _delayUpdate: bool
         :return:
         '''
         if metaDict is None:
@@ -669,7 +718,6 @@ class UserInputClass:
 
         if ID is None:
             ID = GetRandomHash()
-
 
         newEvent = {
             'datetime': startDT,
@@ -682,13 +730,22 @@ class UserInputClass:
 
         for event in self._calEvents.copy():
             if event['ID'] == newEvent['ID']:
-                # this event ID already exists, update the event
-                self._calEvents.remove(event)
+                if event == newEvent:
+                    break # ignore this duplicate
+                else:
+                    # this event is being updated
+                    self._calEvents.remove(event)
+        else:
+            # add the event normally
+            self._calEvents.append(newEvent)
 
-        self._calEvents.append(newEvent)
+            self._SaveCalData()
+            self._currentDatetime = startDT
 
-        self._SaveCalData()
-        self._calDisplayMonth(startDT)
+            if _delayUpdate:
+                self._wait__calDisplayMonth.Restart()
+            else:
+                self._calDisplayMonth()
 
     def _SaveCalData(self):
         # Write the data to a file
@@ -810,6 +867,9 @@ class UserInputClass:
         self._SaveCalData()
         self.UpdateMonthDisplay()
 
+    def SetupList(self, *a, **k):
+        return self.setup_list(*a, **k)
+
     def setup_list(self,
                    list_popup_name,  # str()
                    list_btn_hide,  # Button object
@@ -901,6 +961,9 @@ class UserInputClass:
             print('name=', name)
             self._TLP.HidePopup(name)
 
+    def GetList(self, *a, **k):
+        return self.get_list(*a, **k)
+
     def get_list(self,
                  options=None,  # list()
                  callback=None,
@@ -918,7 +981,7 @@ class UserInputClass:
         self._list_table.clear_all_data()
 
         # try to sort the options
-        if sort == True:
+        if sort is True:
             try:
                 options.sort()
             except:
@@ -999,7 +1062,7 @@ class UserInputClass:
                      callback=None,
                      # function - should take 2 params, the UserInput instance and the value the user submitted
                      feedback_btn=None,  # button to assign submitted value
-                     password_mode=False, # mask your typing with '****'
+                     password_mode=False,  # mask your typing with '****'
                      text_feedback=None,  # button() to show text as its typed
                      passthru=None,  # any object that you want to also come thru the callback
                      message=None,
