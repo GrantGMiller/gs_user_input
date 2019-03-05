@@ -683,6 +683,11 @@ class UserInputClass:
 
         return result
 
+    def GetCalEventByID(self, ID):
+        for event in self._calEvents.copy():
+            if event.get('ID', None) == ID:
+                return event
+
     def GetAllCalendarEvents(self):
         '''
         eventDict looks like:
@@ -853,12 +858,21 @@ class UserInputClass:
         self.DeleteEvent(self._calHeldEvent)
         self._calHeldEvent = None
 
+    def DeleteEventByID(self, ID):
+        print('862 DeleteEventByID(', ID)
+        for event in self._calEvents.copy():
+            if event.get('ID') == ID:
+                print('860 removing event=', event)
+                self._calEvents.remove(event)
+                self._wait__calDisplayMonth.Restart()
+
     def DeleteEvent(self, eventDict):
         '''
         Deletes the specified eventDict
         :param eventDict:
         :return:
         '''
+        print('DeleteEvent(', eventDict)
         if eventDict in self._calEvents:
             self._calEvents.remove(eventDict)
         else:
