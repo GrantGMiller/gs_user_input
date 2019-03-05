@@ -12,7 +12,7 @@ from keyboard import Keyboard
 from scrolling_table import ScrollingTable
 from gs_tools import GetRandomHash
 
-DEBUG = True
+DEBUG = False
 if not DEBUG:
     print = lambda *a, **k: None
 
