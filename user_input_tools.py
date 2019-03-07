@@ -887,7 +887,7 @@ class UserInputClass:
     def setup_list(self,
                    list_popup_name,  # str()
                    list_btn_hide,  # Button object
-                   list_btn_table,  # list()
+                   list_btn_table,  # list() of Button objects
                    list_btn_scroll_up=None,  # Button object
                    list_btn_scroll_down=None,  # Button object
                    list_label_message=None,  # Button/Label object
