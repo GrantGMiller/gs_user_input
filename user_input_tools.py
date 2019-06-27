@@ -342,7 +342,7 @@ class UserInputClass:
                        calLblMonthYear=None,
                        calPopupName=None,
                        startDay=None,
-                       maxAgendaWidth=None, #limit the num of characters on an adgenda. to prevent it word-wrapping
+                       maxAgendaWidth=None,  # limit the num of characters on an adgenda. to prevent it word-wrapping
 
                        ):
         '''
@@ -446,7 +446,7 @@ class UserInputClass:
         # Load previous data
         self._LoadCalData()
 
-        #Set the 6th week buttons to not visible
+        # Set the 6th week buttons to not visible
         for btn in self._calDayNumBtns + self._calDayAgendaBtns:
             if btn.ID % 100 >= 35:
                 btn.SetVisible(False)
@@ -706,7 +706,8 @@ class UserInputClass:
                          metaDict=None,
                          endDT=None,
                          ID=None,
-                         _delayUpdate=True, # weather to update the display immediately or wait for 1 second after last update
+                         _delayUpdate=True,
+                         # weather to update the display immediately or wait for 1 second after last update
                          ):
         '''
         Add an event to the calendar
@@ -736,7 +737,7 @@ class UserInputClass:
         for event in self._calEvents.copy():
             if event['ID'] == newEvent['ID']:
                 if event == newEvent:
-                    break # ignore this duplicate
+                    break  # ignore this duplicate
                 else:
                     # this event is being updated
                     self._calEvents.remove(event)
@@ -1030,6 +1031,8 @@ class UserInputClass:
                        ShiftID=None,  # int()
                        FeedbackObject=None,  # object with .SetText() method
                        kb_btn_message=None,
+                       kb_class=None,
+                       kb_class_kwargs=None,
                        ):
 
         self._kb_btn_cancel = kb_btn_cancel
@@ -1058,7 +1061,13 @@ class UserInputClass:
             def kb_btn_cancelEvent(button, state):
                 self.HidePopup()
 
-        self._kb_Keyboard = Keyboard(
+        if kb_class is None:
+            kb_class = Keyboard
+
+        if kb_class_kwargs is None:
+            kb_class_kwargs = {}
+
+        self._kb_Keyboard = kb_class(
             TLP=self._TLP,
             KeyIDs=KeyIDs,  # list()
             BackspaceID=BackspaceID,  # int()
@@ -1066,6 +1075,7 @@ class UserInputClass:
             SpaceBarID=SpaceBarID,  # int()
             ShiftID=ShiftID,  # int()
             FeedbackObject=FeedbackObject,  # object with .SetText() method
+            **kb_class_kwargs,
         )
 
     def GetKeyboard(self, *a, **k):
