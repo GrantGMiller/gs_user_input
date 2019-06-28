@@ -36,6 +36,8 @@ class UserInputClass:
         self._kb_callback = None
         self._instances.append(self)
 
+        self._list_popup_name = ''
+
     def set_file_explorer_parameters(self, d):
         for key, value in d.items():
             method = getattr(self._dirNav, key)
@@ -897,7 +899,7 @@ class UserInputClass:
 
                    ):
 
-        self._list_popup_name = list_popup_name
+        self._list_popup_name.append(list_popup_name)
         self._list_table = ScrollingTable()
 
         if list_level_scroll is not None:
@@ -1029,6 +1031,7 @@ class UserInputClass:
                        ClearID=None,  # int()
                        SpaceBarID=None,  # int()
                        ShiftID=None,  # int()
+                       SymbolID=None,
                        FeedbackObject=None,  # object with .SetText() method
                        kb_btn_message=None,
                        kb_class=None,
@@ -1074,9 +1077,13 @@ class UserInputClass:
             ClearID=ClearID,  # int()
             SpaceBarID=SpaceBarID,  # int()
             ShiftID=ShiftID,  # int()
+            SymbolID=SymbolID,
             FeedbackObject=FeedbackObject,  # object with .SetText() method
             **kb_class_kwargs,
         )
+
+    def SetKeyboardText(self, text):
+        self._kb_Keyboard.SetString(text)
 
     def GetKeyboard(self, *a, **k):
         return self.get_keyboard(*a, **k)
