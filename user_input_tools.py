@@ -1082,6 +1082,10 @@ class UserInputClass:
             **kb_class_kwargs,
         )
 
+    @property
+    def KeyboardObject(self):
+        return self._kb_Keyboard
+
     def SetKeyboardText(self, text):
         self._kb_Keyboard.SetString(text)
 
