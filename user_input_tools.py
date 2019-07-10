@@ -1079,7 +1079,7 @@ class UserInputClass:
             ShiftID=ShiftID,  # int()
             SymbolID=SymbolID,
             FeedbackObject=FeedbackObject,  # object with .SetText() method
-            **kb_class_kwargs,
+            **kb_class_kwargs
         )
 
     @property
@@ -1088,6 +1088,8 @@ class UserInputClass:
 
     def SetKeyboardText(self, text):
         self._kb_Keyboard.SetString(text)
+        if self._kb_text_feedback:
+            self._kb_text_feedback.SetText(text)
 
     def GetKeyboard(self, *a, **k):
         return self.get_keyboard(*a, **k)
