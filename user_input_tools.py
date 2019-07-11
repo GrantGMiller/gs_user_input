@@ -1096,6 +1096,7 @@ class UserInputClass:
 
     def get_keyboard(self,
                      kb_popup_name=None,
+                     kb_popup_timeout=0,
                      callback=None,
                      # function - should take 2 params, the UserInput instance and the value the user submitted
                      feedback_btn=None,  # button to assign submitted value
@@ -1133,7 +1134,7 @@ class UserInputClass:
 
         self._kb_Keyboard.ClearString()
 
-        self._TLP.ShowPopup(self._kb_popup_name)
+        self._TLP.ShowPopup(self._kb_popup_name, kb_popup_timeout)
 
     def setup_boolean(self,
                       bool_popup_name,  # str()
