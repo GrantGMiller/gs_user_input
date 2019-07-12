@@ -899,7 +899,7 @@ class UserInputClass:
 
                    ):
 
-        self._list_popup_name.append(list_popup_name)
+        self._list_popup_name = list_popup_name
         self._list_table = ScrollingTable()
 
         if list_level_scroll is not None:
