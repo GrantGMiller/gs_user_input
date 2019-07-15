@@ -989,7 +989,9 @@ class UserInputClass:
                  passthru=None,  # any object that you want to pass thru to the callback
                  message=None,
                  sort=False,
+                 highlight=None,
                  ):
+        self._list_highlight = highlight or None
         self._list_callback = callback
         self._list_feedback_btn = feedback_btn
         self._list_passthru = passthru
@@ -1006,6 +1008,12 @@ class UserInputClass:
 
         for option in options:
             self._list_table.add_new_row_data({'Option': option})
+
+        # highlight some options if applicable
+        self._list_table.ClearAllStateRules()
+        if self._list_highlight is not None:
+            for text in self._list_highlight:
+                self._list_table.AddSelectedTextStateRule(text, 1)
 
         if self._list_label_message:
             if message:
