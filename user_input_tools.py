@@ -989,6 +989,7 @@ class UserInputClass:
                  passthru=None,  # any object that you want to pass thru to the callback
                  message=None,
                  sort=False,
+                 sortFunc=None,
                  highlight=None,
                  ):
         self._list_highlight = highlight or None
@@ -1000,14 +1001,20 @@ class UserInputClass:
         self._list_table.clear_all_data()
 
         # try to sort the options
-        if sort is True:
-            try:
-                options.sort()
-            except:
-                pass
+        if sortFunc:
+            for option in options:
+                self._list_table.add_new_row_data({'Option': option})
+            self._list_table.SortCustom(sortFunc)
 
-        for option in options:
-            self._list_table.add_new_row_data({'Option': option})
+        else:
+            if sort is True:
+                try:
+                    options.sort()
+                except Exception as e:
+                    print('1015 Exception:', e)
+
+            for option in options:
+                self._list_table.add_new_row_data({'Option': option})
 
         # highlight some options if applicable
         self._list_table.ClearAllStateRules()
