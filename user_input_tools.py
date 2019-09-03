@@ -1106,8 +1106,30 @@ class UserInputClass:
         if self._kb_text_feedback:
             self._kb_text_feedback.SetText(text)
 
-    def GetKeyboard(self, *a, **k):
-        return self.get_keyboard(*a, **k)
+    def GetKeyboard(self,
+                    kb_popup_name=None,
+                    kb_popup_timeout=0,
+                    callback=None,
+                    # function - should take 2 params, the UserInput instance and the value the user submitted
+                    feedback_btn=None,  # button to assign submitted value
+                    password_mode=False,  # mask your typing with '****'
+                    text_feedback=None,  # button() to show text as its typed
+                    passthru=None,  # any object that you want to also come thru the callback
+                    message=None,
+                    allowCancel=True,  # set to False to force the user to enter input):
+                    ):
+        return self.get_keyboard(
+            kb_popup_name,
+            kb_popup_timeout,
+            callback,
+            # function - should take 2 params, the UserInput instance and the value the user submitted
+            feedback_btn,  # button to assign submitted value
+            password_mode,  # mask your typing with '****'
+            text_feedback,  # button() to show text as its typed
+            passthru,  # any object that you want to also come thru the callback
+            message,
+            allowCancel,  # set to False to force the user to enter input
+        )
 
     def get_keyboard(self,
                      kb_popup_name=None,
