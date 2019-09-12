@@ -733,7 +733,7 @@ class UserInputClass:
             'meta': metaDict,
             'Start Time': startDT,
             'End Time': endDT,
-            'ID': ID,  # assign a unique id to each event
+            'ID': ID,  # assign a unique str to each event
         }
 
         for event in self._calEvents.copy():
