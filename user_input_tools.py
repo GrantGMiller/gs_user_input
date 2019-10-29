@@ -1503,7 +1503,7 @@ class DirectoryNavigationClass:
 
         except Exception as e:
             print('Exeption DirectoryNavigationClass._UpdateTable\n', e)
-            print('item=', item)
+            #print('item=', item)
 
     def IsFile(self, filepath):
         print('IsFile(filepath={})'.format(filepath))
