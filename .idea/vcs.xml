@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../extronlib-pro" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../gs-tools" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../keyboard" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../scrolling-table" vcs="Git" />
   </component>

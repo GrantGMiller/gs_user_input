@@ -1,8 +1,12 @@
-from extronlib_pro import (
+try:
+    from extronlib_pro import (
     event,
     File,
     Wait,
 )
+except:
+    from extronlib import event
+    from extronlib.system import File, Wait
 
 import calendar
 import datetime
