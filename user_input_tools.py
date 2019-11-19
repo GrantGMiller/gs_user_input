@@ -1,9 +1,9 @@
 try:
     from extronlib_pro import (
-    event,
-    File,
-    Wait,
-)
+        event,
+        File,
+        Wait,
+    )
 except:
     from extronlib import event
     from extronlib.system import File, Wait
@@ -891,19 +891,26 @@ class UserInputClass:
     def SetupList(self, *a, **k):
         return self.setup_list(*a, **k)
 
-    def setup_list(self,
-                   list_popup_name,  # str()
-                   list_btn_hide,  # Button object
-                   list_btn_table,  # list() of Button objects
-                   list_btn_scroll_up=None,  # Button object
-                   list_btn_scroll_down=None,  # Button object
-                   list_label_message=None,  # Button/Label object
-                   list_label_scroll=None,  # Button/Label object
-                   list_level_scroll=None,
+    def setup_list(
+            self,
+            list_popup_name,  # str()
+            list_btn_hide,  # Button object
+            list_btn_table,  # list() of Button objects
+            list_btn_scroll_up=None,  # Button object
+            list_btn_scroll_down=None,  # Button object
+            list_label_message=None,  # Button/Label object
+            list_label_scroll=None,  # Button/Label object
+            list_level_scroll=None,
+            list_btn_ok=None,  # used for multiselect
+            list_popup_name_multiselect=None,
 
-                   ):
+    ):
 
         self._list_popup_name = list_popup_name
+
+        self._list_popup_name_multiselect = list_popup_name_multiselect
+        self._multiselect = False
+        self._list_btn_ok = list_btn_ok
         self._list_table = ScrollingTable()
 
         if list_level_scroll is not None:
@@ -922,37 +929,35 @@ class UserInputClass:
         self._list_label_message = list_label_message
 
         # Setup the ScrollingTable
-        for btn in list_btn_table:
+        for rowNum, btn in enumerate(list_btn_table):
+            # Register the btn with the ScrollingTable instance
+            self._list_table.register_row_buttons(rowNum, btn)
 
-            # Add an event handler for the table buttons
-            @event(btn, 'Released')
-            def list_btn_event(button, state):
-                print('list_btn_event')
-                print('self._list_passthru=', self._list_passthru)
-                print('button=', button)
-                print('button.Text=', button.Text)
-
+        @event(self._list_table, 'CellReleased')
+        def ListTableEvent(table, cell):
+            if self._multiselect is True:
+                if cell.GetValue() in self._list_table.GetSelectedTextStateRules():
+                    self._list_table.RemoveSelectedTextStateRule(cell.GetValue())
+                else:
+                    self._list_table.AddSelectedTextStateRule(cell.GetValue(), 1)
+            else:
                 # If a button with no text is selected. Do nothing.
-                if button.Text == '':
+                if cell.GetValue() == '':
                     print('button.Text == ''\nPlease select a button with text')
                     return
 
                 # Set text feedback
                 if self._list_feedback_btn:
-                    self._list_feedback_btn.SetText(button.Text)
+                    self._list_feedback_btn.SetText(cell.GetValue())
 
                 # do callback
                 if self._list_callback:
                     if self._list_passthru is not None:
-                        self._list_callback(self, button.Text, self._list_passthru)
+                        self._list_callback(self, cell.GetValue(), self._list_passthru)
                     else:
-                        self._list_callback(self, button.Text)
+                        self._list_callback(self, cell.GetValue())
 
                 self._TLP.HidePopup(self._list_popup_name)
-
-            # Register the btn with the ScrollingTable instance
-            row_number = list_btn_table.index(btn)
-            self._list_table.register_row_buttons(row_number, btn)
 
         # Setup Scroll buttons
         if list_btn_scroll_up:
@@ -976,6 +981,24 @@ class UserInputClass:
         def list_btn_hideEvent(button, state):
             self.HidePopup()
 
+        # OK button
+        @event(self._list_btn_ok, 'Released')
+        def ListBtnOKEvent(button, state):
+            ret = list(self._list_table.GetSelectedTextStateRules().keys())
+            # do callback
+            if self._list_callback:
+                if self._list_passthru is not None:
+                    self._list_callback(self, ret, self._list_passthru)
+                else:
+                    self._list_callback(self, ret)
+
+            # Set text feedback
+            if self._list_feedback_btn:
+                self._list_feedback_btn.SetText(', '.join(ret))
+
+            self._TLP.HidePopup(self._list_popup_name)
+            self._TLP.HidePopup(self._list_popup_name_multiselect)
+
     def HidePopup(self):
         # hides popups for all types
         for name in [self._list_popup_name, self._kb_popup_name] + list(self._kb_other_popups.values()):
@@ -989,19 +1012,23 @@ class UserInputClass:
                  options=None,  # list()
                  callback=None,
                  # function - should take 2 params, the UserInput instance and the value the user submitted
-                 feedback_btn=None,
+                 feedback_btn=None,  # the button that the user's selection will be .SetText() to
                  passthru=None,  # any object that you want to pass thru to the callback
-                 message=None,
-                 sort=False,
-                 sortFunc=None,
-                 highlight=None,
+                 message=None,  # prompt to display to user
+                 sort=False,  # bool
+                 sortFunc=None,  # a function that acts like sorted()
+                 highlight=None,  # list of str, if str is matched in the list, it will be highlighted
+                 multiselect=False
+                 # True will allow the user to select more than one item from the list, the user must then press the OK button
                  ):
+        self._multiselect = multiselect
         self._list_highlight = highlight or None
         self._list_callback = callback
         self._list_feedback_btn = feedback_btn
         self._list_passthru = passthru
 
         # Update the table with new data
+        self._list_table.ClearSelectedTextStateRules()
         self._list_table.clear_all_data()
 
         # try to sort the options
@@ -1033,7 +1060,10 @@ class UserInputClass:
                 self._list_label_message.SetText('Select an item from the list.')
 
         # Show the list popup
-        self._TLP.ShowPopup(self._list_popup_name)
+        if multiselect is True:
+            self._TLP.ShowPopup(self._list_popup_name_multiselect)
+        else:
+            self._TLP.ShowPopup(self._list_popup_name)
 
     def SetupKeyboard(self, *a, **k):
         return self.setup_keyboard(*a, **k)
@@ -1056,7 +1086,6 @@ class UserInputClass:
                        kb_class=None,
                        kb_class_kwargs=None,
                        ):
-
         self._kb_btn_cancel = kb_btn_cancel
         self._kb_popup_name = kb_popup_name
         self._kb_other_popups = kb_other_popups
@@ -1147,7 +1176,6 @@ class UserInputClass:
                      message=None,
                      allowCancel=True,  # set to False to force the user to enter input
                      ):
-
         if allowCancel is True:
             self._kb_btn_cancel.SetVisible(True)
         else:
@@ -1507,7 +1535,7 @@ class DirectoryNavigationClass:
 
         except Exception as e:
             print('Exeption DirectoryNavigationClass._UpdateTable\n', e)
-            #print('item=', item)
+            # print('item=', item)
 
     def IsFile(self, filepath):
         print('IsFile(filepath={})'.format(filepath))
