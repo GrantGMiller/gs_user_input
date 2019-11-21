@@ -951,11 +951,19 @@ class UserInputClass:
                     self._list_feedback_btn.SetText(cell.GetValue())
 
                 # do callback
+                # NOTE: If the user calls 2 GetList() back to back, the 2nd one doesnt show popup, idk why, todo,
+                #  The Wait(0) works for now tho
                 if self._list_callback:
                     if self._list_passthru is not None:
-                        self._list_callback(self, cell.GetValue(), self._list_passthru)
+                        Wait(
+                            0,
+                            lambda i=self, v=cell.GetValue(), p=self._list_passthru: self._list_callback(i, v, p)
+                        )
                     else:
-                        self._list_callback(self, cell.GetValue())
+                        Wait(
+                            0,
+                            lambda i=self, v=cell.GetValue(): self._list_callback(i, v)
+                        )
 
                 self._TLP.HidePopup(self._list_popup_name)
 
