@@ -990,22 +990,23 @@ class UserInputClass:
             self.HidePopup()
 
         # OK button
-        @event(self._list_btn_ok, 'Released')
-        def ListBtnOKEvent(button, state):
-            ret = list(self._list_table.GetSelectedTextStateRules().keys())
-            # do callback
-            if self._list_callback:
-                if self._list_passthru is not None:
-                    self._list_callback(self, ret, self._list_passthru)
-                else:
-                    self._list_callback(self, ret)
+        if self._list_btn_ok:
+            @event(self._list_btn_ok, 'Released')
+            def ListBtnOKEvent(button, state):
+                ret = list(self._list_table.GetSelectedTextStateRules().keys())
+                # do callback
+                if self._list_callback:
+                    if self._list_passthru is not None:
+                        self._list_callback(self, ret, self._list_passthru)
+                    else:
+                        self._list_callback(self, ret)
 
-            # Set text feedback
-            if self._list_feedback_btn:
-                self._list_feedback_btn.SetText(', '.join(ret))
+                # Set text feedback
+                if self._list_feedback_btn:
+                    self._list_feedback_btn.SetText(', '.join(ret))
 
-            self._TLP.HidePopup(self._list_popup_name)
-            self._TLP.HidePopup(self._list_popup_name_multiselect)
+                self._TLP.HidePopup(self._list_popup_name)
+                self._TLP.HidePopup(self._list_popup_name_multiselect)
 
     def HidePopup(self):
         # hides popups for all types
