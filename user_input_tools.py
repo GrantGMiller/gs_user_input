@@ -823,9 +823,9 @@ class UserInputClass:
                     if dt.month == dataDT.month:
                         if dt.day == dataDT.day:
                             if isinstance(dt, datetime.datetime):
-                                if dt.hour is not 0:
+                                if dt.hour != 0:
                                     if dt.hour == dataDT.hour:
-                                        if dt.minute is not 0:
+                                        if dt.minute != 0:
                                             if dt.minute == dataDT.minute:
                                                 result.append(item)
                                         else:
@@ -1116,10 +1116,14 @@ class UserInputClass:
             if self._kb_feedback_btn:
                 self._kb_feedback_btn.SetText(string)
 
+            self._kb_Keyboard.EnableKeyPressedCallback(True)
+
         if self._kb_btn_cancel:
             @event(self._kb_btn_cancel, 'Released')
             def kb_btn_cancelEvent(button, state):
                 self.HidePopup()
+
+                self._kb_Keyboard.EnableKeyPressedCallback(True)
 
         if kb_class is None:
             kb_class = Keyboard
@@ -1159,6 +1163,7 @@ class UserInputClass:
                     passthru=None,  # any object that you want to also come thru the callback
                     message=None,
                     allowCancel=True,  # set to False to force the user to enter input):
+                    disableKeyCallback=False,  # temporariliy disable the keyCallback
                     ):
         return self.get_keyboard(
             kb_popup_name,
@@ -1171,6 +1176,7 @@ class UserInputClass:
             passthru,  # any object that you want to also come thru the callback
             message,
             allowCancel,  # set to False to force the user to enter input
+            disableKeyCallback
         )
 
     def get_keyboard(self,
@@ -1184,6 +1190,7 @@ class UserInputClass:
                      passthru=None,  # any object that you want to also come thru the callback
                      message=None,
                      allowCancel=True,  # set to False to force the user to enter input
+                     disableKeyCallback=False,  # temporarily disable the keyCallback
                      ):
         if allowCancel is True:
             self._kb_btn_cancel.SetVisible(True)
@@ -1209,6 +1216,9 @@ class UserInputClass:
         self._kb_callback = callback  # function accepts 2 params; this UserInput instance and the value submitted
         self._kb_feedback_btn = feedback_btn  # button to assign submitted value
         self._kb_passthru = passthru
+
+        if disableKeyCallback:
+            self._kb_Keyboard.EnableKeyPressedCallback(False)
 
         self._kb_Keyboard.ClearString()
 
@@ -1501,7 +1511,7 @@ class DirectoryNavigationClass:
                         if self.IsInCurrentDirectory(item):
                             print('self.IsInCurrentDirectory(item)')
                             itemMinusCurrent = item[len(self._currentDirectory):]
-                            if itemMinusCurrent is not '':
+                            if itemMinusCurrent != '':
                                 print('itemMinusCurrent is not ""')
 
                                 if self.IsFile(item):
