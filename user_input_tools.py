@@ -1163,7 +1163,7 @@ class UserInputClass:
                     passthru=None,  # any object that you want to also come thru the callback
                     message=None,
                     allowCancel=True,  # set to False to force the user to enter input):
-                    disableKeyCallback=False,  # temporariliy disable the keyCallback
+                    disableKeyCallback=False,  # temporarily disable the keyCallback
                     ):
         return self.get_keyboard(
             kb_popup_name,
@@ -1224,6 +1224,9 @@ class UserInputClass:
 
         self._TLP.ShowPopup(self._kb_popup_name, kb_popup_timeout)
 
+    def SetupBoolean(self, *a, **k):
+        return self.setup_boolean(*a, **k)
+
     def setup_boolean(self,
                       bool_popup_name,  # str()
 
@@ -1280,6 +1283,9 @@ class UserInputClass:
             @event(self._bool_btn_cancel, 'Released')
             def _bool_btn_cancelEvent(button, state):
                 _bool_btn_event(button, state)
+
+    def GetBoolean(self, *a, **k):
+        return self.get_boolean(*a, **k)
 
     def get_boolean(self,
                     callback=None,
