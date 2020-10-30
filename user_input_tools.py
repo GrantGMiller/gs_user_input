@@ -16,7 +16,7 @@ from keyboard import Keyboard
 from scrolling_table import ScrollingTable
 from gs_tools import GetRandomHash
 
-DEBUG = False
+DEBUG = True
 if not DEBUG:
     print = lambda *a, **k: None
 
@@ -1071,8 +1071,12 @@ class UserInputClass:
         # Show the list popup
         if multiselect is True:
             self._TLP.ShowPopup(self._list_popup_name_multiselect)
+            if self._list_btn_ok:
+                self._list_btn_ok.SetVisible(True)
         else:
             self._TLP.ShowPopup(self._list_popup_name)
+            if self._list_btn_ok:
+                self._list_btn_ok.SetVisible(False)
 
     def SetupKeyboard(self, *a, **k):
         return self.setup_keyboard(*a, **k)
@@ -1162,7 +1166,7 @@ class UserInputClass:
                     text_feedback=None,  # button() to show text as its typed
                     passthru=None,  # any object that you want to also come thru the callback
                     message=None,
-                    allowCancel=True,  # set to False to force the user to enter input):
+                    allowCancel=True,  # set to False to force the user to enter input
                     disableKeyCallback=False,  # temporarily disable the keyCallback
                     ):
         return self.get_keyboard(
