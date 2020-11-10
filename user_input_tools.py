@@ -972,6 +972,9 @@ class UserInputClass:
             if not list_btn_scroll_up._repeatTime:
                 list_btn_scroll_up._repeatTime = 0.1
 
+            if not list_btn_scroll_up._holdTime:
+                list_btn_scroll_up._holdTime = 0.2
+
             @event(list_btn_scroll_up, ['Pressed', 'Repeated'])
             def list_btn_scroll_upEvent(button, state):
                 self._list_table.scroll_up()
@@ -979,6 +982,9 @@ class UserInputClass:
         if list_btn_scroll_down:
             if not list_btn_scroll_down._repeatTime:
                 list_btn_scroll_down._repeatTime = 0.1
+
+            if not list_btn_scroll_down._holdTime:
+                list_btn_scroll_down._holdTime = 0.2
 
             @event(list_btn_scroll_down, ['Pressed', 'Repeated'])
             def list_btn_scroll_downEvent(button, state):
