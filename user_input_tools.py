@@ -1031,7 +1031,7 @@ class UserInputClass:
                  passthru=None,  # any object that you want to pass thru to the callback
                  message=None,  # prompt to display to user
                  sort=False,  # bool
-                 sortFunc=None,  # a function like "lambda d: d['Option'].lower()"
+                 sortFunc=None,  # None to use default list.sort(), or a function like "lambda d: d['Option'].lower()"
                  highlight=None,  # list of str, if str is matched in the list, it will be highlighted
                  multiselect=False
                  # True will allow the user to select more than one item from the list, the user must then press the OK button
