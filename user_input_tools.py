@@ -1456,7 +1456,7 @@ class DirectoryNavigationClass:
 
     def UpdateData(self, newData=None):
         print('UpdateData(newData={})'.format(newData))
-        if newData == None:
+        if newData is None:
             newData = File.ListDirWithSub()
         self._data = newData
         self._UpdateTable()
