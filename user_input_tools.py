@@ -1304,10 +1304,10 @@ class UserInputClass:
                     passthru=None,  # any object that you want to also come thru the callback
                     message=None,
                     long_message=None,
-                    true_message=None,
-                    false_message=None,
-                    true_text=None,
-                    false_text=None,
+                    true_message=None,  # the text under the button
+                    false_message=None,  # the text under the button
+                    true_text=None,  # the button text
+                    false_text=None,  # the button text
                     ):
         self._bool_callback = callback
         self._bool_passthru = passthru
